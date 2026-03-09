@@ -1,9 +1,9 @@
 <component name="libraryTable">
   <library name="Gradle: com.google.firebase:firebase-common:22.0.1@aar" external-system-id="GRADLE">
     <CLASSES>
-      <root url="file://$USER_HOME$/.gradle/caches/9.2.1/transforms/21c8c3c5fa253ff41117b02991917f3a/workspace/transformed/firebase-common-22.0.1/AndroidManifest.xml" />
-      <root url="file://$USER_HOME$/.gradle/caches/9.2.1/transforms/21c8c3c5fa253ff41117b02991917f3a/workspace/transformed/firebase-common-22.0.1/res" />
-      <root url="jar://$USER_HOME$/.gradle/caches/9.2.1/transforms/21c8c3c5fa253ff41117b02991917f3a/workspace/transformed/firebase-common-22.0.1/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/9.2.1/transforms/d25d333ec05bafae9a48c9cf0a73b524/transformed/firebase-common-22.0.1/res" />
+      <root url="jar://$USER_HOME$/.gradle/caches/9.2.1/transforms/d25d333ec05bafae9a48c9cf0a73b524/transformed/firebase-common-22.0.1/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/9.2.1/transforms/d25d333ec05bafae9a48c9cf0a73b524/transformed/firebase-common-22.0.1/AndroidManifest.xml" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

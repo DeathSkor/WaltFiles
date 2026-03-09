@@ -8,15 +8,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun HomeScreen(onNavigateToProfile: () -> Unit) {
+fun HomeScreen(onNavigateToProfile: () -> Unit, onNavigateToExplore: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Welcome to Home Page", style = MaterialTheme.typography.headlineMedium)
+        Text(text = "Welcome to WaltFiles", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onNavigateToProfile) {
+        Button(
+            onClick = onNavigateToExplore,
+            modifier = Modifier.fillMaxWidth(0.7f)
+        ) {
+            Text(text = "Explore Movies")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = onNavigateToProfile,
+            modifier = Modifier.fillMaxWidth(0.7f)
+        ) {
             Text(text = "Go to Profile")
         }
     }
