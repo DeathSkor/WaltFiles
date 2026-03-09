@@ -4,14 +4,20 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import fr.isen.lucasribeiro.waltfiles.ui.LoginScreen
+import fr.isen.lucasribeiro.waltfiles.ui.HomeScreen
+import fr.isen.lucasribeiro.waltfiles.ui.ProfileScreen
 import fr.isen.lucasribeiro.waltfiles.ui.theme.WaltFilesTheme
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,29 +25,37 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             WaltFilesTheme {
+                val navController = rememberNavController()
+                var isLoggedIn by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser != null) }
+
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    Box(modifier = Modifier.padding(innerPadding)) {
+                        if (!isLoggedIn) {
+                            LoginScreen(onLoginSuccess = {
+                                isLoggedIn = true
+                            })
+                        } else {
+                            NavHost(navController = navController, startDestination = "home") {
+                                composable("home") {
+                                    HomeScreen(onNavigateToProfile = {
+                                        navController.navigate("profile")
+                                    })
+                                }
+                                composable("profile") {
+                                    ProfileScreen(
+                                        onLogout = {
+                                            isLoggedIn = false
+                                        },
+                                        onNavigateBack = {
+                                            navController.popBackStack()
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    WaltFilesTheme {
-        Greeting("Android")
     }
 }
