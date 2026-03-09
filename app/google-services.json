@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "76408434019",
+    "project_id": "waltfiles",
+    "storage_bucket": "waltfiles.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:76408434019:android:60d2b2d444446762dbb756",
+        "android_client_info": {
+          "package_name": "fr.isen.lucasribeiro.waltfiles"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBxgeqSt7ZzNk6xKxPI3mYXy0TUhhw_mMM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
