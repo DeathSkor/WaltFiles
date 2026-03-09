@@ -1,4 +1,4 @@
-package fr.isen.lucasribeiro.waltfiles.ui
+package fr.isen.lucasribeiro.waltfiles.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*

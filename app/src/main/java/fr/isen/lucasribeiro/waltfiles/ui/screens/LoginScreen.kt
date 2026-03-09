@@ -1,4 +1,4 @@
-package fr.isen.lucasribeiro.waltfiles.ui
+package fr.isen.lucasribeiro.waltfiles.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
