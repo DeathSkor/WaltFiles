@@ -78,4 +78,25 @@ object DatabaseService {
             }
         })
     }
+
+    fun saveUsername(username: String, onComplete: (Boolean) -> Unit) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return onComplete(false)
+        val database = FirebaseDatabase.getInstance(DATABASE_URL).reference
+        database.child("users").child(userId).child("username").setValue(username)
+            .addOnCompleteListener { task ->
+                onComplete(task.isSuccessful)
+            }
+    }
+
+    fun fetchUsername(onResult: (String?) -> Unit) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return onResult(null)
+        val database = FirebaseDatabase.getInstance(DATABASE_URL).reference
+        database.child("users").child(userId).child("username").get()
+            .addOnSuccessListener { snapshot ->
+                onResult(snapshot.getValue(String::class.java))
+            }
+            .addOnFailureListener {
+                onResult(null)
+            }
+    }
 }
