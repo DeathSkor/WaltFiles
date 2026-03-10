@@ -267,8 +267,11 @@ fun FilmItem(film: Film, tag: String?, onClick: () -> Unit) {
 
     ListItem(
         headlineContent = { 
+            Text(film.titre ?: "Unknown Film")
+        },
+        supportingContent = { 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(film.titre ?: "Unknown Film")
+                Text("${film.annee} • ${film.genre}")
                 if (tag != null) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
@@ -285,7 +288,6 @@ fun FilmItem(film: Film, tag: String?, onClick: () -> Unit) {
                 }
             }
         },
-        supportingContent = { Text("${film.annee} • ${film.genre}") },
         trailingContent = { film.numero?.let { Text("#$it") } },
         leadingContent = {
             if (!film.image.isNullOrEmpty()) {
@@ -376,7 +378,15 @@ fun FilmDetailList(franchise: Franchise, userTags: Map<String, String>, onFilmCl
 @Composable
 fun FilmInfoPage(film: Film, currentTag: String?, onTagSelected: (String?) -> Unit) {
     val placeholder = painterResource(id = R.drawable.`cat`)
-    val tags = listOf("Watched", "Want to watch", "Own on DVD/Blu-Ray", "Want to get rid of")
+    val tags = listOf("Watched", "Want to watch", "Own on DVD-Blu-Ray", "Want to get rid of")
+    var globalStats by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
+    var selectedUsersList by remember { mutableStateOf<Pair<String, List<String>>?>(null) }
+
+    LaunchedEffect(film.titre) {
+        DatabaseService.fetchGlobalTagStats(film.titre ?: "") { stats ->
+            globalStats = stats
+        }
+    }
     
     Column(
         modifier = Modifier
@@ -421,6 +431,35 @@ fun FilmInfoPage(film: Film, currentTag: String?, onTagSelected: (String?) -> Un
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
+            text = "Community Stats",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.align(Alignment.Start)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            tags.forEach { tag ->
+                val users = globalStats[tag] ?: emptyList()
+                AssistChip(
+                    onClick = { if (users.isNotEmpty()) selectedUsersList = tag to users },
+                    label = { 
+                        Text("$tag (${users.size})") 
+                    },
+                    leadingIcon = if (currentTag == tag) {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                    } else null
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
             text = "My Status",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.align(Alignment.Start)
@@ -440,10 +479,7 @@ fun FilmInfoPage(film: Film, currentTag: String?, onTagSelected: (String?) -> Un
                         if (currentTag == tag) onTagSelected(null)
                         else onTagSelected(tag)
                     },
-                    label = { Text(tag) },
-                    leadingIcon = if (currentTag == tag) {
-                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                    } else null
+                    label = { Text(tag) }
                 )
             }
         }
@@ -467,6 +503,32 @@ fun FilmInfoPage(film: Film, currentTag: String?, onTagSelected: (String?) -> Un
                 film.numero?.let { InfoRow(label = "Sequence Number", value = it.toString()) }
             }
         }
+    }
+
+    // Dialog to show list of users for a tag
+    selectedUsersList?.let { pair ->
+        val tag = pair.first
+        val users = pair.second
+        AlertDialog(
+            onDismissRequest = { selectedUsersList = null },
+            title = { Text("Users who tagged as '$tag'") },
+            text = {
+                LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+                    items(users) { userEmail ->
+                        ListItem(
+                            headlineContent = { Text(userEmail) },
+                            leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
+                        )
+                        HorizontalDivider()
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { selectedUsersList = null }) {
+                    Text("Close")
+                }
+            }
+        )
     }
 }
 
