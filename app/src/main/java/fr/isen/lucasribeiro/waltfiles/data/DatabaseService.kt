@@ -45,17 +45,19 @@ object DatabaseService {
         return s.replace(".", "_").replace("#", "_").replace("$", "_").replace("[", "_").replace("]", "_")
     }
 
-    fun saveUserTag(filmTitle: String, tag: String?) {
+    fun saveUserTag(filmTitle: String, tag: String?, username: String? = null) {
         val user = FirebaseAuth.getInstance().currentUser ?: return
         val userId = user.uid
-        val userEmail = user.email ?: "Unknown User"
         val database = FirebaseDatabase.getInstance(DATABASE_URL).reference
         
         val sanitizedTitle = sanitize(filmTitle)
-        
         val userRef = database.child("users").child(userId)
-        // Store user email so it can be retrieved for community stats
-        userRef.child("email").setValue(userEmail)
+        
+        // If username is provided (e.g. from a profile update or during registration/login)
+        // we should make sure it's stored.
+        if (username != null) {
+            userRef.child("username").setValue(username)
+        }
         
         val tagRef = userRef.child("tags").child(sanitizedTitle)
         if (tag == null) {
@@ -97,10 +99,13 @@ object DatabaseService {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val stats = mutableMapOf<String, MutableList<String>>()
                 for (userSnapshot in snapshot.children) {
-                    val email = userSnapshot.child("email").getValue(String::class.java) ?: continue
+                    val username = userSnapshot.child("username").getValue(String::class.java) 
+                        ?: userSnapshot.child("email").getValue(String::class.java) // fallback to email
+                        ?: "Unknown User"
+                    
                     val userTag = userSnapshot.child("tags").child(sanitizedTitle).getValue(String::class.java)
                     if (userTag != null) {
-                        stats.getOrPut(userTag) { mutableListOf() }.add(email)
+                        stats.getOrPut(userTag) { mutableListOf() }.add(username)
                     }
                 }
                 onResult(stats)
