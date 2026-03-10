@@ -99,4 +99,31 @@ object DatabaseService {
                 onResult(null)
             }
     }
+
+    fun fetchGlobalTagStats(filmTitle: String, onResult: (Map<String, List<String>>) -> Unit) {
+        val database = FirebaseDatabase.getInstance(DATABASE_URL).reference
+        val usersRef = database.child("users")
+        val sanitizedTitle = filmTitle.replace(".", "_").replace("#", "_").replace("$", "_").replace("[", "_").replace("]", "_")
+
+        usersRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val statsMap = mutableMapOf<String, MutableList<String>>()
+                for (userSnapshot in snapshot.children) {
+                    val username = userSnapshot.child("username").getValue(String::class.java) ?: "Anonymous"
+                    val tag = userSnapshot.child("tags").child(sanitizedTitle).getValue(String::class.java)
+                    if (tag != null) {
+                        if (!statsMap.containsKey(tag)) {
+                            statsMap[tag] = mutableListOf()
+                        }
+                        statsMap[tag]?.add(username)
+                    }
+                }
+                onResult(statsMap)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                onResult(emptyMap())
+            }
+        })
+    }
 }
