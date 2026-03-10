@@ -16,12 +16,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +34,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import fr.isen.lucasribeiro.waltfiles.R
 import fr.isen.lucasribeiro.waltfiles.data.*
+
+
 
 sealed class ExploreLevel {
     object Categories : ExploreLevel()
@@ -47,6 +52,9 @@ fun ExploreScreen(onNavigateBack: () -> Unit) {
     val levelStack = remember { mutableStateListOf<ExploreLevel>() }
     var userTags by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
 
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearchActive by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         DatabaseService.fetchCategories {
             categories = it
@@ -56,36 +64,112 @@ fun ExploreScreen(onNavigateBack: () -> Unit) {
         }
     }
 
+    // Flatten all films for search
+    val allFilms = remember(categories) {
+        categories?.flatMap { category ->
+            category.franchises?.flatMap { franchise ->
+                val films = franchise.films?.toMutableList() ?: mutableListOf()
+                franchise.sous_sagas?.forEach { saga ->
+                    saga.films?.let { films.addAll(it) }
+                }
+                films
+            } ?: emptyList()
+        }?.distinctBy { it.titre } ?: emptyList()
+    }
+
+    val filteredFilms = remember(searchQuery, allFilms) {
+        if (searchQuery.isEmpty()) emptyList()
+        else allFilms.filter { it.titre?.contains(searchQuery, ignoreCase = true) == true }
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        when (val level = currentLevel) {
-                            is ExploreLevel.Categories -> "Categories"
-                            is ExploreLevel.Franchises -> level.category.categorie ?: "Franchises"
-                            is ExploreLevel.Films -> level.franchise.nom ?: "Films"
-                            is ExploreLevel.FilmInfo -> level.film.titre ?: "Film Details"
+            if (isSearchActive) {
+                TopAppBar(
+                    title = {
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text("Search films...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                            )
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            isSearchActive = false
+                            searchQuery = ""
+                        }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (levelStack.isNotEmpty()) {
-                            currentLevel = levelStack.removeAt(levelStack.size - 1)
-                        } else {
-                            onNavigateBack()
+                    },
+                    actions = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear")
+                            }
                         }
-                    }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
-            )
+                )
+            } else {
+                TopAppBar(
+                    title = {
+                        Text(
+                            when (val level = currentLevel) {
+                                is ExploreLevel.Categories -> "Categories"
+                                is ExploreLevel.Franchises -> level.category.categorie ?: "Franchises"
+                                is ExploreLevel.Films -> level.franchise.nom ?: "Films"
+                                is ExploreLevel.FilmInfo -> level.film.titre ?: "Film Details"
+                            }
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            if (levelStack.isNotEmpty()) {
+                                currentLevel = levelStack.removeAt(levelStack.size - 1)
+                            } else {
+                                onNavigateBack()
+                            }
+                        }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { isSearchActive = true }) {
+                            Icon(Icons.Default.Search, contentDescription = "Search")
+                        }
+                    }
+                )
+            }
         }
     ) { padding ->
         val safeCategories = categories
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            if (safeCategories == null) {
+            if (isSearchActive && searchQuery.isNotEmpty()) {
+                if (filteredFilms.isEmpty()) {
+                    Box(modifier = Modifier.align(Alignment.Center)) {
+                        Text("No films match your search.")
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(filteredFilms) { film ->
+                            val sanitizedTitle = film.titre?.replace(".", "_")?.replace("#", "_")?.replace("$", "_")?.replace("[", "_")?.replace("]", "_") ?: ""
+                            FilmItem(film, userTags[sanitizedTitle]) {
+                                levelStack.add(currentLevel)
+                                currentLevel = ExploreLevel.FilmInfo(film)
+                                isSearchActive = false
+                                searchQuery = ""
+                            }
+                            HorizontalDivider()
+                        }
+                    }
+                }
+            } else if (safeCategories == null) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (safeCategories.isEmpty()) {
                 Box(modifier = Modifier.align(Alignment.Center)) {
