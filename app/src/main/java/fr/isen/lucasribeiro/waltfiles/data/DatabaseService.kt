@@ -41,29 +41,18 @@ object DatabaseService {
         }
     }
 
-    private fun sanitize(s: String): String {
-        return s.replace(".", "_").replace("#", "_").replace("$", "_").replace("[", "_").replace("]", "_")
-    }
-
-    fun saveUserTag(filmTitle: String, tag: String?, username: String? = null) {
-        val user = FirebaseAuth.getInstance().currentUser ?: return
-        val userId = user.uid
+    fun saveUserTag(filmTitle: String, tag: String?) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val database = FirebaseDatabase.getInstance(DATABASE_URL).reference
+        val userTagsRef = database.child("users").child(userId).child("tags")
         
-        val sanitizedTitle = sanitize(filmTitle)
-        val userRef = database.child("users").child(userId)
+        // Use a sanitized version of the title as a key
+        val sanitizedTitle = filmTitle.replace(".", "_").replace("#", "_").replace("$", "_").replace("[", "_").replace("]", "_")
         
-        // If username is provided (e.g. from a profile update or during registration/login)
-        // we should make sure it's stored.
-        if (username != null) {
-            userRef.child("username").setValue(username)
-        }
-        
-        val tagRef = userRef.child("tags").child(sanitizedTitle)
         if (tag == null) {
-            tagRef.removeValue()
+            userTagsRef.child(sanitizedTitle).removeValue()
         } else {
-            tagRef.setValue(tag)
+            userTagsRef.child(sanitizedTitle).setValue(tag)
         }
     }
 
@@ -90,30 +79,24 @@ object DatabaseService {
         })
     }
 
-    fun fetchGlobalTagStats(filmTitle: String, onResult: (Map<String, List<String>>) -> Unit) {
+    fun saveUsername(username: String, onComplete: (Boolean) -> Unit) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return onComplete(false)
         val database = FirebaseDatabase.getInstance(DATABASE_URL).reference
-        val sanitizedTitle = sanitize(filmTitle)
-        val usersRef = database.child("users")
-
-        usersRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val stats = mutableMapOf<String, MutableList<String>>()
-                for (userSnapshot in snapshot.children) {
-                    val username = userSnapshot.child("username").getValue(String::class.java) 
-                        ?: userSnapshot.child("email").getValue(String::class.java) // fallback to email
-                        ?: "Unknown User"
-                    
-                    val userTag = userSnapshot.child("tags").child(sanitizedTitle).getValue(String::class.java)
-                    if (userTag != null) {
-                        stats.getOrPut(userTag) { mutableListOf() }.add(username)
-                    }
-                }
-                onResult(stats)
+        database.child("users").child(userId).child("username").setValue(username)
+            .addOnCompleteListener { task ->
+                onComplete(task.isSuccessful)
             }
+    }
 
-            override fun onCancelled(error: DatabaseError) {
-                onResult(emptyMap())
+    fun fetchUsername(onResult: (String?) -> Unit) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return onResult(null)
+        val database = FirebaseDatabase.getInstance(DATABASE_URL).reference
+        database.child("users").child(userId).child("username").get()
+            .addOnSuccessListener { snapshot ->
+                onResult(snapshot.getValue(String::class.java))
             }
-        })
+            .addOnFailureListener {
+                onResult(null)
+            }
     }
 }
