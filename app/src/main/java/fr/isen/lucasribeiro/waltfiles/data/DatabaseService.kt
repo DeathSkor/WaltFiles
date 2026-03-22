@@ -46,7 +46,6 @@ object DatabaseService {
         val database = FirebaseDatabase.getInstance(DATABASE_URL).reference
         val userTagsRef = database.child("users").child(userId).child("tags")
         
-        // Use a sanitized version of the title as a key
         val sanitizedTitle = filmTitle.replace(".", "_").replace("#", "_").replace("$", "_").replace("[", "_").replace("]", "_")
         
         if (tag == null) {

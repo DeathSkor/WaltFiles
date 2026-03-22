@@ -1,6 +1,11 @@
 package fr.isen.lucasribeiro.waltfiles.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,8 +21,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import fr.isen.lucasribeiro.waltfiles.data.Category
 import fr.isen.lucasribeiro.waltfiles.data.DatabaseService
@@ -34,13 +43,20 @@ fun ProfileScreen(onLogout: () -> Unit, onNavigateBack: () -> Unit) {
     var selectedTag by remember { mutableStateOf(tags[0]) }
     var userTags by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var allCategories by remember { mutableStateOf<List<Category>>(emptyList()) }
+    var username by remember { mutableStateOf("Loading...") }
+    var avatarUri by remember { mutableStateOf<Uri?>(null) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        avatarUri = uri
+    }
 
     LaunchedEffect(Unit) {
-        DatabaseService.fetchUserTags {
-            userTags = it
-        }
-        DatabaseService.fetchCategories {
-            allCategories = it
+        DatabaseService.fetchUserTags { userTags = it }
+        DatabaseService.fetchCategories { allCategories = it }
+        DatabaseService.fetchUsername { name ->
+            username = name ?: "Anonymous"
         }
     }
 
@@ -74,7 +90,7 @@ fun ProfileScreen(onLogout: () -> Unit, onNavigateBack: () -> Unit) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(140.dp),
+                .height(180.dp),
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surfaceVariant,
             shadowElevation = 2.dp
@@ -85,17 +101,44 @@ fun ProfileScreen(onLogout: () -> Unit, onNavigateBack: () -> Unit) {
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Avatar (Left)
-                Surface(
-                    modifier = Modifier.size(80.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer
+                // Avatar + Name Column (Left)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.width(100.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Avatar",
-                        modifier = Modifier.padding(12.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .clickable { imagePickerLauncher.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (avatarUri != null) {
+                            AsyncImage(
+                                model = avatarUri,
+                                contentDescription = "Avatar",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Avatar",
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = username,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        fontSize = 14.sp
                     )
                 }
 
@@ -214,10 +257,12 @@ fun ProfileScreen(onLogout: () -> Unit, onNavigateBack: () -> Unit) {
                         )
                     }
                 } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         items(filteredFilms) { film ->
-                            FilmItem(film = film, tag = null, onClick = { /* Navigate if needed */ })
-                            HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
+                            FilmCard(film = film, tag = null, onClick = { /* Navigate if needed */ })
                         }
                     }
                 }
