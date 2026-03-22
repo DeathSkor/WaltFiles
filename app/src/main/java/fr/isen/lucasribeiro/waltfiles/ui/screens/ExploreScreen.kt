@@ -494,7 +494,7 @@ fun FilmInfoPage(film: Film, currentTag: String?, onTagSelected: (String?) -> Un
                     .padding(vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                tags.forEach { tag ->
+                tags.filter { it != "Watched" && it != "Want to watch" }.forEach { tag ->
                     val users = globalStats[tag] ?: emptyList()
                     FilterChip(
                         selected = false,
