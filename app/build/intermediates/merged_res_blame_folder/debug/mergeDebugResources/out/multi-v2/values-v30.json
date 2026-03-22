@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "fr.isen.lucasribeiro.waltfiles.app-mergeDebugResources-53:/values-v30/values-v30.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\Paul\\.gradle\\caches\\9.2.1\\transforms\\04a79e51507559e6881ab12934ad7d9d\\workspace\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "72",
+                        "endOffsets": "123"
+                    }
+                }
+            ]
+        }
+    ]
+}
